@@ -1,38 +1,36 @@
-import express from 'express';
-import { ApolloServer } from 'apollo-server-express';
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
-import resolvers from './resolvers.js'
+const { ApolloServer, gql } = require('apollo-server-express');
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const mongoose = require('mongoose');
+require('dotenv').config();
 
-dotenv.config();
+const typeDefs = fs.readFileSync(path.join(__dirname, 'graphql', 'schema.graphql'), 'utf-8');
+const resolvers = require('./resolvers/index');
 
-const app = express();
+async function startApolloServer() {
+  const server = new ApolloServer({ typeDefs, resolvers });
+  await server.start();
 
-// Lecture du fichier schema.graphql
-const schema = fs.readFileSync(path.join(__dirname, 'graphql/schema.graphql'), 'utf8');
+  const app = express();
+  server.applyMiddleware({ app });
 
-// Connexion à la base de données MongoDB
-mongoose.connect(process.env.MONGODB_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'Erreur de connexion à la base de données :'));
-db.once('open', () => {
-  console.log('Connecté à la base de données MongoDB');
-});
+  await new Promise(resolve => app.listen({ port: 4000 }, resolve));
+  console.log(`Server ready at http://localhost:4000${server.graphqlPath}`);
 
-const server = new ApolloServer({ 
-  typeDefs: schema,
-  resolvers,
-});
+  return { server, app };
+}
 
-server.applyMiddleware({ app });
+startApolloServer().then(({ server, app }) => {
+  const uri = process.env.MONGODB_URI;
+  console.log('URL de connexion MongoDB :', uri);
 
-const PORT = 4000;
-app.listen(PORT, () => {
-  console.log(`Le serveur est en cours d'exécution sur http://localhost:${PORT}`);
-  console.log(`GraphQL Playground disponible sur http://localhost:${PORT}/graphql`);
+  mongoose.connect(uri);
+  const db = mongoose.connection;
+  db.on('error', console.error.bind(console, 'Erreur de connexion :'));
+  db.once('open', () => {
+    console.log('Connecté à MongoDB Atlas');
+  });
+}).catch(error => {
+  console.error('Erreur au démarrage du serveur Apollo:', error);
 });

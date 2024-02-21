@@ -31,3 +31,8 @@ type Query {
   borrows: [Borrow!]!
   borrow(id: ID!): Borrow!
 }
+
+type Mutation {
+  addUser(username: String!, email: String!, password: String!): User!
+  
+}

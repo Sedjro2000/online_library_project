@@ -1,0 +1,33 @@
+type Book {
+  _id: ID!
+  title: String!
+  author: String!
+  genre: String!
+  description: String
+  imageUrl: String
+}
+
+type User {
+  _id: ID!
+  username: String!
+  email: String!
+  password: String!
+  isAdmin: Boolean!
+}
+
+type Borrow {
+  _id: ID!
+  user: User!
+  book: Book!
+  borrowedDate: String!
+  returnDate: String
+}
+
+type Query {
+  books: [Book!]!
+  book(id: ID!): Book!
+  users: [User!]!
+  user(id: ID!): User!
+  borrows: [Borrow!]!
+  borrow(id: ID!): Borrow!
+}
